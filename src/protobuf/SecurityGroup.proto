@@ -1,0 +1,11 @@
+package topstack_Compute;
+
+option java_package = "com.transcend.compute.message";
+option java_outer_classname = "SecurityGroupMessage";
+
+
+message SecurityGroup {
+        required string groupId = 1;
+        required string groupName = 2;
+}
+

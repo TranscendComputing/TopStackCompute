@@ -1,0 +1,22 @@
+
+
+package topstack_Compute;
+
+option java_package = "com.transcend.compute.message";
+option java_outer_classname = "DisassociateAddressMessage";
+
+message DisassociateAddressRequestMessage {
+    required bool typeId = 120;
+    required string requestId = 1;
+    required string callerAccessKey = 2;
+    optional string publicIp = 3;
+    optional string associationId = 4;
+}
+
+message DisassociateAddressResponseMessage {
+    required bool typeId = 121;
+	required string callerAccessKey = 1;
+	required string requestId = 2;
+	required bool return = 3;
+	optional string associationId = 4;
+}

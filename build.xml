@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project basedir="." name="Compute" default="war.all">
+
+	<property name="name" value="Compute" />
+	<property file="${user.home}/${project.name}.properties"/>
+	<property file="${user.home}/build.properties"/>
+	<property name="config.filename" value="${user.name}.properties"/>
+	<property file="${config.filename}"/>
+	<property file="build.properties"/>
+
+	<property name="project.base.dir" value="." />
+	<property environment="env" />
+	<property name="debuglevel" value="source,lines,vars" />
+	<property name="src" value="${project.base.dir}/src" />
+	<property name="resources" value="${project.base.dir}/resources" />
+	<property name="WebContent" value="${project.base.dir}/WebContent" />
+	<property name="test" value="${project.base.dir}/test" />
+	<property name="build" value="${project.base.dir}/build" />
+    <property name="project.lib" value="${project.base.dir}/lib" />
+	<property name="war" value="${build}/war" />
+	<property name="classes" value="${war}/WEB-INF/classes" />
+	<property name="warlib" value="${war}/WEB-INF/lib" />
+	<property name="lib" value="${build}/lib" />
+	<property name="build.dir" location="build" />
+	<property name="classes.dir" location="${build.dir}/classes" />
+	<property name="resources.dir" location="resources" />
+	<property name="target.war.name" value="${project.name}.war" />
+	<property name="target.war" location="${build.dir}/lib/${target.war.name}" />
+	<property name="external" value="${build}/external" />
+	<property name="external.dir" location="${build.dir}/external" />
+	<property name="external.jars" value="${build}/external/lib" />
+	<property name="external.lib" value="${build}/external/lib" />
+    <property name="config" value="${resources}" />
+
+	<property name="hudson.url" value="jenkins.momentumsoftware.com:8080/" />
+
+    <property name="maven.compat" value="true"/>
+
+    <property name="message.path" value="com/transcend/compute/message" />
+    <property name="message.dir" value="${src}/${message.path}" />
+
+    <property name="dist.suffix" value="" />
+    <property name="toughresources" value="TopStackResources${dist.suffix}" />
+	<property name="toughresources.dir" value="${project.base.dir}/../${toughresources}"/>
+    <import file="${toughresources.dir}/common.build.xml" />
+
+    <target name="init">
+        <mkdir dir="${build}" />
+        <mkdir dir="${classes}" />
+        <mkdir dir="${warlib}" />
+        <mkdir dir="${lib}" />
+        <mkdir dir="${external}" />
+        <mkdir dir="${external.jars}" />
+        <mkdir dir="${message.dir}" />
+    </target>
+
+	<path id="war.lib.classpath">
+		<fileset dir="${web.lib}">
+			<include name="**/*.jar" />
+		</fileset>
+	</path>
+
+    <target name="run.devtests" depends="compile.test"
+        if="test.dir.exists" unless="skip.tests">
+        <echo message="Running devtests test against ${deploy.ip}"/>
+
+        <junit printsummary="yes" haltonfailure="yes" showoutput="${test.verbose}">
+            <sysproperty key="java.library.path" value="${java.library.path}:/usr/local/lib"/>
+            <sysproperty key="zmq.role" value="${zmq.role}"/>
+            <formatter type="xml"/>
+            <classpath refid="test.path"/>
+            <batchtest fork="yes" todir="${test.results}">
+                <fileset dir="${test.classes}">
+                    <include name="**/devtests/**/*Test.class"/>
+                </fileset>
+            </batchtest>
+        </junit>
+    </target>
+
+    <target name="run.zmq" depends="compile.test"
+        if="test.dir.exists" unless="skip.tests">
+        <echo message="Running devtests test against ${deploy.ip}"/>
+
+        <java fork="true" classname="com.msi.compute.devtests.ZmqRoundTrip">
+            <sysproperty key="java.library.path" value="${java.library.path}:/usr/local/lib"/>
+            <sysproperty key="zmq.role" value="${zmq.role}"/>
+            <sysproperty key="deploy.ip" value="${deploy.ip}"/>
+            <sysproperty key="tester.host" value="${tester.host}"/>
+            <classpath refid="test.path"/>
+        </java>
+    </target>
+    <!-- general targets -->
+
+    <!-- Package test base classes and utilities for re-use in descendents -->
+    <target name="jar.client">
+        <jar destfile="${lib}/${name}-client.jar">
+            <fileset dir="${classes}">
+                <include name="*.ports" />
+                <include name="**/${message.path}/*.class" />
+            </fileset>
+        </jar>
+    </target>
+
+    <target name="war.all" depends="compile.proto, compile.src, copy.config, copyWebContent, run.tests, jar.client">
+        <war.all.maven/>
+    </target>
+
+    <target name="maven.deploy" depends="jar.client, dist, maven.deploy.war.n.client">
+    </target>
+
+</project>

@@ -1,0 +1,23 @@
+import "DefaultMessage.proto";
+
+package topstack_Compute;
+
+option java_package = "com.transcend.compute.message";
+option java_outer_classname = "DeleteSecurityGroupMessage";
+
+message DeleteSecurityGroupRequestMessage {
+    required bool typeId = 116;
+    required string requestId = 1;
+    required string callerAccessKey = 2;
+    optional string groupName = 3;
+    optional string groupId = 4;
+}
+
+message DeleteSecurityGroupResponseMessage {
+    required bool typeId = 117;
+    required string requestId = 1;
+    required string callerAccessKey = 2;
+    required bool return = 3;
+}
+
+

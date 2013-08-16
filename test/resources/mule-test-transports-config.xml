@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:spring="http://www.springframework.org/schema/beans"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+      xsi:schemaLocation="http://www.springframework.org/schema/beans
+      classpath:org/springframework/beans/factory/xml/spring-beans-3.0.xsd
+        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+        http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+        http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd">
+    <description>
+    This configuration uses VM endpoints to direct requests, for easy testing.
+    </description>
+
+    <spring:bean id="portProperties"
+        class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <spring:property name="ignoreUnresolvablePlaceholders" value="true" />
+        <spring:property name="ignoreResourceNotFound" value="true"/>
+        <spring:property name="locations">
+                <spring:list>
+                        <spring:value>classpath*:/test.ports</spring:value>
+                </spring:list>
+        </spring:property>
+    </spring:bean>
+
+    <!-- testing endpoint -->
+    <vm:endpoint name="DirectToZMQIn" path="directToZMQ"
+        exchange-pattern="one-way"/>
+
+    <vm:endpoint name="ActionIn" path="action"
+        exchange-pattern="one-way"/>
+
+    <vm:endpoint name="SystemErrorHandlerIn" path="systemErrorHandler?method=snoopErrorResponse"
+        transformer-refs="ExceptionToErrorResponse"
+        exchange-pattern="one-way"/>
+
+</mule>

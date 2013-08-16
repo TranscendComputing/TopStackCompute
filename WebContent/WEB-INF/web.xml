@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app version="3.0" xmlns="http://java.sun.com/xml/ns/javaee"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+    metadata-complete="false">
+	<display-name>Compute</display-name>
+
+	<servlet>
+		<servlet-name>Compute</servlet-name>
+		<servlet-class>com.transcend.compute.servlet.ComputeServlet</servlet-class>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+
+	<servlet>
+		<servlet-name>MetricAdmin</servlet-name>
+		<servlet-class>com.msi.tough.servlet.AdminServlet</servlet-class>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>Compute</servlet-name>
+		<url-pattern>/Action/*</url-pattern>
+	</servlet-mapping>
+
+	<servlet-mapping>
+		<servlet-name>MetricAdmin</servlet-name>
+		<url-pattern>/MetricAdmin/*</url-pattern>
+	</servlet-mapping>
+
+    <context-param>
+        <param-name>contextConfigLocation</param-name>
+        <param-value>/WEB-INF/classes/application-context.xml</param-value>
+    </context-param>
+
+    <listener>
+        <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+    </listener>
+
+    <context-param>
+        <param-name>org.mule.config</param-name>
+        <param-value>mule-workflow-config.xml,mule-transports-config.xml</param-value>
+    </context-param>
+
+    <listener>
+        <listener-class>org.mule.config.builders.MuleXmlBuilderContextListener</listener-class>
+    </listener>
+
+    <listener>
+        <listener-class>com.msi.tough.servlet.StandardContextListener</listener-class>
+    </listener>
+</web-app>

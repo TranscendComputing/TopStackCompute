@@ -1,0 +1,47 @@
+import "SecurityGroup.proto";
+
+package topstack_Compute;
+
+option java_package = "com.transcend.compute.message";
+option java_outer_classname = "InstanceMessage";
+
+message Instance {
+    message Tag {
+        required string key = 1;
+        optional string value = 2;
+    }
+    message Placement {
+        required string availabilityZone = 1;
+    }
+    message InstanceState {
+        required string name = 1;
+        required uint32 code = 2;
+    }
+
+    required string instanceId = 1;
+    required string imageId = 2;
+    optional string kernelId = 3;
+    optional string ramdiskId = 4;
+    required InstanceState state = 5;
+    optional string privateDnsName = 6;
+    optional string privateIp = 7;
+    optional string publicDnsName = 8;
+    optional string publicIp = 9;
+    optional string lastCause = 10;
+    optional string keyName = 11;
+    required string platform = 12;
+
+    /* Make sure repeats are in the first 15 for optimization reasons */
+    repeated string productCode = 13;
+    repeated Tag tag = 14;
+        repeated topstack_Compute.SecurityGroup group = 15;
+
+        optional uint32 amiLaunchIndex = 16;
+        required string type = 17;
+        required string architecture = 18;
+        required Placement placement = 19;
+        optional string subnetId = 21;
+        optional string vpcId = 22;
+        required uint64 launchTime = 23;
+
+}

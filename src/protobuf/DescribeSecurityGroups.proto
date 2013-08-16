@@ -1,0 +1,68 @@
+package topstack_Compute;
+
+option java_package = "com.transcend.compute.message";
+option java_outer_classname = "DescribeSecurityGroupsMessage";
+
+message DescribeSecurityGroupsRequestMessage {
+    required bool typeId = 138;
+    required string requestId = 1;
+    required string callerAccessKey = 2;
+    repeated string groupName = 3;
+    repeated string groupId = 4;
+    message Filter {
+        required string name = 1;
+        repeated string value = 2;
+    }
+    repeated Filter filter = 5;
+}
+
+message DescribeSecurityGroupsResponseMessage {
+    required bool typeId = 139;
+    required string requestId = 1;
+    required string callerAccessKey = 2;
+    
+    message SecurityGroupInfo {
+    	required string ownerId = 1;
+    	required string groupId = 2;
+    	required string groupName = 3;
+    	required string groupDescription = 4;
+    	optional string vpcId = 5;
+    	
+    	message Group {
+    		required string userId = 1;
+    		required string groupId = 2;
+    		required string groupName = 3;
+    	}
+    	
+    	message IpRange{
+    		required string cidrIp = 1;
+    	}
+    	
+    	message IpPermission {
+    		required string ipProtocol = 1;
+    		required int32 fromPort = 2;
+    		required int32 toPort = 3;
+    		repeated Group group = 4;
+    		repeated IpRange ipRange = 5;
+    	}
+    	
+    	message IpPermissionEgress {
+    		required string ipProtocol = 1;
+    		required int32 fromPort = 2;
+    		required int32 toPort = 3;
+    		repeated Group group = 4;
+    		repeated IpRange ipRange = 5;
+    	}
+    	
+    	repeated IpPermission ipPermission = 6;
+    	repeated IpPermissionEgress ipPermissionEgress = 7;
+    	
+    	message TagSet {
+    		required string key = 1;
+    		required string value = 2;
+    	}
+    	repeated TagSet tagSet = 8;
+    }
+    
+	repeated SecurityGroupInfo securityGroupInfo = 3;
+}

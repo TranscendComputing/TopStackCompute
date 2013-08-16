@@ -1,0 +1,29 @@
+package topstack_Compute;
+
+option java_package = "com.transcend.compute.message";
+option java_outer_classname = "CreateVolumeMessage";
+
+message CreateVolumeRequestMessage {
+    required bool typeId = 132;
+    required string requestId = 1;
+    required string callerAccessKey = 2;
+    optional int32 size = 3;
+    optional string snapshotId = 4;
+    required string availabilityZone = 5;
+    optional string volumeType = 6;
+    optional int32 iops = 7; 
+}
+
+message CreateVolumeResponseMessage {
+    required bool typeId = 133;
+    required string requestId = 1;
+    required string callerAccessKey = 2;
+    required string volumeId = 3;
+    required int32 size = 4;
+    optional string snapshotId = 5;
+    required string availabilityZone = 6;
+    required string status = 7;
+    required string createTime = 8;
+    required string volumeType = 9;
+    optional int32 iops = 10;
+}

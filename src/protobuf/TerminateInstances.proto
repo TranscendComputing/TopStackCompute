@@ -1,0 +1,29 @@
+import "Reservation.proto";
+
+package topstack_Compute;
+
+option java_package = "com.transcend.compute.message";
+option java_outer_classname = "TerminateInstancesMessage";
+
+message TerminateInstancesRequestMessage {
+    required bool typeId = 130;
+    required string requestId = 1;
+    required string callerAccessKey = 2;
+    repeated string instanceIds = 3;
+}
+
+message TerminateInstancesResponseMessage {
+    required bool typeId = 131;
+        message InstanceStateChange {
+            message InstanceState {
+                required string name = 1;
+                required uint32 code = 2;
+            }
+            required string instanceId = 1;
+            required InstanceState currentState = 2;
+            required InstanceState previousState = 3;
+        }
+        required string requestId = 1;
+        required string callerAccessKey = 2;
+        repeated InstanceStateChange terminatingInstances = 3;
+}

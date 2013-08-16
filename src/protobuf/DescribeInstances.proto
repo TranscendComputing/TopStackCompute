@@ -1,0 +1,27 @@
+import "Reservation.proto";
+
+package topstack_Compute;
+
+option java_package = "com.transcend.compute.message";
+option java_outer_classname = "DescribeInstancesMessage";
+
+message DescribeInstancesRequestMessage {
+    required bool typeId = 118;
+    required string requestId = 1;
+    required string callerAccessKey = 2;
+    repeated string instanceIds = 3;
+
+    message Filter {
+        required string name = 1;
+        repeated string value = 2;
+    }
+
+    repeated Filter filter = 4;
+}
+
+message DescribeInstancesResponseMessage {
+    required bool typeId = 119;
+    required string requestId = 1;
+    required string callerAccessKey = 2;
+    repeated topstack_Compute.Reservation reservations = 3;
+}

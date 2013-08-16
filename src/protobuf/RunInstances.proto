@@ -1,0 +1,28 @@
+import "Reservation.proto";
+import "Instance.proto";
+
+package topstack_Compute;
+
+option java_package = "com.transcend.compute.message";
+option java_outer_classname = "RunInstancesMessage";
+
+message RunInstancesRequestMessage {
+    required bool typeId = 128;
+    required string requestId = 1;
+    required string callerAccessKey = 2;
+    required string imageId = 3;
+    required string instanceType = 4;
+    optional string kernelId = 5;
+    optional string ramdiskId = 6;
+    required topstack_Compute.Instance.Placement placement = 7;
+    optional uint32 minCount = 8;
+    optional uint32 maxCount = 9;
+    optional string userData = 10;
+}
+
+message RunInstancesResponseMessage {
+    required bool typeId = 129;
+    required string requestId = 1;
+    required string callerAccessKey = 2;
+    required topstack_Compute.Reservation reservation = 3;
+}

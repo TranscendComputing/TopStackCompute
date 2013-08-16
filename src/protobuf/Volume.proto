@@ -1,0 +1,50 @@
+package topstack_Compute;
+
+option java_package = "com.transcend.compute.message";
+option java_outer_classname = "VolumeMessage";
+
+message Volume {
+    required string volumeId = 1;
+    required int32 size = 2;
+    optional string snapshotId = 3;
+    required string availabilityZone = 4;
+    required VolumeStatus status = 5;
+    required string createTime = 6;
+
+    message Attachment {
+        required string volumeId = 1;
+        required string instanceId = 2;
+        required string device = 3;
+        required AttachStatus status = 4;
+        required string attachTime = 5;
+        required bool deleteOnTermination = 6;
+    }
+    repeated Attachment attachment = 7;
+
+    message Tag {
+        required string key = 1;
+        required string value = 2;
+    }
+    repeated Tag tag = 8;
+
+    required string volumeType = 9;
+    optional int32 iops = 10;
+}
+
+enum VolumeStatus {
+    CREATING = 0;
+    AVAILABLE = 1;
+    IN_USE = 2;
+    DELETING = 3;
+    DELETED = 3;
+    ERROR = 3;
+}
+
+enum AttachStatus {
+    ATTACHING = 0;
+    ATTACHED = 1;
+    DETACHING = 2;
+    DETACHED = 3;
+}
+
+

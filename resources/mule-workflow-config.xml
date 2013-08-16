@@ -1,0 +1,624 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:spring="http://www.springframework.org/schema/beans"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+      xmlns:protobuf="http://www.mulesoft.org/schema/mule/protobuf"
+      xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting"
+      xsi:schemaLocation="http://www.springframework.org/schema/beans
+      http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+        http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+        http://www.mulesoft.org/schema/mule/protobuf http://www.mulesoft.org/schema/mule/protobuf/current/mule-protobuf.xsd
+        http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd
+        http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd">
+    <description>
+    This configuration uses REST services and ZeroMQ endpoints to receive
+    requests.
+    </description>
+
+    <!-- configuration>
+    <default-threading-profile maxThreadsActive="3"/>
+    </configuration -->
+    <vm:connector name="memory" numberOfConcurrentTransactedReceivers="10">
+    <vm:queue-profile maxOutstandingMessages="500">
+       <default-persistent-queue-store/>
+   </vm:queue-profile>
+    </vm:connector>
+
+    <custom-transformer name="ExceptionToString" class="com.msi.tough.workflow.core.ExceptionToString"/>
+    <custom-transformer name="ExceptionToErrorResponse" class="com.msi.tough.workflow.core.ExceptionToErrorResponse"/>
+    <custom-transformer name="HttpRequestToParameter" class="org.mule.transport.servlet.transformers.HttpRequestToParameter"/>
+    <custom-transformer name="ObjectToString" class="org.mule.transformer.simple.ObjectToString"/>
+
+    <spring:bean id="muleWorkflow" factory-method="getInstance"
+    class="com.msi.tough.workflow.core.MuleWorkflow">
+    </spring:bean>
+    <spring:bean id="zmqReturnProcessor" factory-method="getInstance"
+    destroy-method="destroy"
+    class="com.msi.tough.workflow.core.RemoteWorkflowResponder">
+    </spring:bean>
+
+    <!-- Global exception strategy; return an error response to requestor -->
+    <custom-exception-strategy name="sendErrorBack" class="com.msi.tough.workflow.core.MuleExceptionStrategy">
+            <outbound-endpoint ref="SystemErrorHandlerIn"/>
+    </custom-exception-strategy>
+
+    <!-- Global exception strategy; record abnormal termination of async tasks -->
+    <!-- TODO: async error recording -->
+
+    <!-- === Zero MQ processing === -->
+    <flow name="ZMQEntry">
+        <inbound-endpoint ref="DirectToZMQEntry"/>
+        <set-session-variable variableName="returnAddress" value="#[payload[1]]"/>
+        <expression-transformer evaluator="groovy" expression="payload[0]"/>
+        <first-successful>
+            <protobuf:deserialize protobufClass="com.transcend.compute.message.AllocateAddressMessage$AllocateAddressRequestMessage"/>
+            <protobuf:deserialize protobufClass="com.transcend.compute.message.AttachVolumeMessage$AttachVolumeRequest"/>
+            <protobuf:deserialize protobufClass="com.transcend.compute.message.AuthorizeSecurityGroupIngressMessage$AuthorizeSecurityGroupIngressRequestMessage"/>
+            <protobuf:deserialize protobufClass="com.transcend.compute.message.CreateKeyPairMessage$CreateKeyPairRequestMessage"/>
+            <protobuf:deserialize protobufClass="com.transcend.compute.message.CreateSecurityGroupMessage$CreateSecurityGroupRequest"/>
+            <protobuf:deserialize protobufClass="com.transcend.compute.message.DeleteKeyPairMessage.DeleteKeyPairRequestMessage"/>
+            <protobuf:deserialize protobufClass="com.transcend.compute.message.DeleteSecurityGroupMessage$DeleteSecurityGroupRequestMessage"/>
+            <protobuf:deserialize protobufClass="com.transcend.compute.message.DescribeInstancesMessage$DescribeInstancesRequestMessage"/>
+            <protobuf:deserialize protobufClass="com.transcend.compute.message.ReleaseAddressMessage$ReleaseAddressRequestMessage"/>
+            <protobuf:deserialize protobufClass="com.transcend.compute.message.RevokeSecurityGroupIngressMessage$RevokeSecurityGroupIngressRequestMessage"/>
+            <protobuf:deserialize protobufClass="com.transcend.compute.message.RunInstancesMessage$RunInstancesRequestMessage"/>
+            <protobuf:deserialize protobufClass="com.transcend.compute.message.TerminateInstancesMessage$TerminateInstancesRequestMessage"/>
+        </first-successful>
+        <log-component />
+        <flow-ref name="ActionEntry"/>
+        <catch-exception-strategy>
+            <outbound-endpoint ref="SystemErrorHandlerIn"/>
+        </catch-exception-strategy>
+    </flow>
+
+    <!-- === Standard Action entry point processing === -->
+    <flow name="ActionEntry">
+        <inbound-endpoint ref="ActionIn"/>
+        <log-component />
+        <choice>
+            <when expression="payload instanceof com.transcend.compute.message.AllocateAddressMessage$AllocateAddressRequestMessage" evaluator="groovy">
+                <flow-ref name="AllocateAddressRequest"/>
+            </when>
+            <when expression="payload instanceof com.transcend.compute.message.AttachVolumeMessage$AttachVolumeRequest" evaluator="groovy">
+                <flow-ref name="AttachVolumeRequest"/>
+            </when>
+            <when expression="payload instanceof com.transcend.compute.message.AssociateAddressMessage$AssociateAddressRequest" evaluator="groovy">
+                <flow-ref name="AssociateAddressRequest"/>
+            </when>
+            <when expression="payload instanceof com.transcend.compute.message.AuthorizeSecurityGroupIngressMessage$AuthorizeSecurityGroupIngressRequestMessage" evaluator="groovy">
+                <flow-ref name="AuthorizeSecurityGroupIngressRequest"/>
+            </when>
+            <when expression="payload instanceof com.transcend.compute.message.CreateKeyPairMessage$CreateKeyPairRequestMessage" evaluator="groovy">
+                <flow-ref name="CreateKeyPairRequest"/>
+            </when>
+            <when expression="payload instanceof com.transcend.compute.message.CreateSecurityGroupMessage$CreateSecurityGroupRequest" evaluator="groovy">
+                <flow-ref name="CreateSecurityGroupRequest"/>
+            </when>
+            <when expression="payload instanceof com.transcend.compute.message.CreateVolumeMessage$CreateVolumeRequestMessage" evaluator="groovy">
+                <flow-ref name="CreateVolumeRequest"/>
+            </when>
+            <when expression="payload instanceof com.transcend.compute.message.DeleteVolumeMessage$DeleteVolumeRequestMessage" evaluator="groovy">
+                <flow-ref name="DeleteVolumeRequest"/>
+            </when>
+            <when expression="payload instanceof com.transcend.compute.message.DescribeVolumesMessage$DescribeVolumesRequestMessage" evaluator="groovy">
+                <flow-ref name="DescribeVolumesRequest"/>
+            </when>
+            <when expression="payload instanceof com.transcend.compute.message.DeleteKeyPairMessage.DeleteKeyPairRequestMessage" evaluator="groovy">
+                <flow-ref name="DeleteKeyPairRequest"/>
+            </when>
+            <when expression="payload instanceof com.transcend.compute.message.DeleteSecurityGroupMessage$DeleteSecurityGroupRequestMessage" evaluator="groovy">
+                <flow-ref name="DeleteSecurityGroupRequest"/>
+            </when>
+            <when expression="payload instanceof com.transcend.compute.message.DescribeSecurityGroupsMessage$DescribeSecurityGroupsRequestMessage" evaluator="groovy">
+                <flow-ref name="DescribeSecurityGroupsRequest"/>
+            </when>
+            <when expression="payload instanceof com.transcend.compute.message.DescribeInstancesMessage$DescribeInstancesRequestMessage" evaluator="groovy">
+                <flow-ref name="DescribeInstancesRequest"/>
+            </when>
+            <when expression="payload instanceof com.transcend.compute.message.DisassociateAddressMessage$DisassociateAddressRequestMessage" evaluator="groovy">
+                <flow-ref name="DisassociateAddressRequest"/>
+            </when>
+            <when expression="payload instanceof com.transcend.compute.message.ReleaseAddressMessage$ReleaseAddressRequestMessage" evaluator="groovy">
+                <flow-ref name="ReleaseAddressRequest"/>
+            </when>
+            <when expression="payload instanceof com.transcend.compute.message.RevokeSecurityGroupIngressMessage$RevokeSecurityGroupIngressRequestMessage" evaluator="groovy">
+                <flow-ref name="RevokeSecurityGroupIngressRequest"/>
+            </when>
+            <when expression="payload instanceof com.transcend.compute.message.RunInstancesMessage$RunInstancesRequestMessage" evaluator="groovy">
+                <flow-ref name="RunInstancesRequest"/>
+            </when>
+            <when expression="payload instanceof com.transcend.compute.message.TerminateInstancesMessage$TerminateInstancesRequestMessage" evaluator="groovy">
+                <flow-ref name="TerminateInstancesRequest"/>
+            </when>
+            <otherwise>
+                <flow-ref name="SystemErrorHandler"/>
+            </otherwise>
+        </choice>
+    </flow>
+
+    <!-- === Individual actions follow === -->
+
+    <!-- Request/Response flow for AttachVolume -->
+
+    <flow name="AttachVolumeRequest">
+        <!-- set-variable variableName="query" value="#[header:INBOUND:http.method]"/ -->
+        <component>
+            <spring-object bean="AttachVolumeWorker"/>
+        </component>
+        <flow-ref name="AttachVolumeResponse"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <flow name="AttachVolumeResponse">
+        <choice>
+            <when expression="#[org.mule.util.StringUtils.isNotEmpty(sessionVars['returnAddress'])]">
+                <flow-ref name="ZMQResponder"/>
+            </when>
+            <otherwise>
+                <component>
+                    <spring-object bean="AttachVolume"/>
+                </component>
+            </otherwise>
+        </choice>
+        <flow-ref name="ClientResponder"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <!-- Request/Response flow for DescribeInstances -->
+
+    <flow name="DescribeInstancesRequest">
+        <!-- set-variable variableName="query" value="#[header:INBOUND:http.method]"/ -->
+        <component>
+            <spring-object bean="DescribeInstancesWorker"/>
+        </component>
+        <flow-ref name="DescribeInstancesResponse"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <flow name="DescribeInstancesResponse">
+        <choice>
+            <when expression="#[org.mule.util.StringUtils.isNotEmpty(sessionVars['returnAddress'])]">
+                <flow-ref name="ZMQResponder"/>
+            </when>
+            <otherwise>
+                <component>
+                    <spring-object bean="DescribeInstancesV2"/>
+                </component>
+            </otherwise>
+        </choice>
+        <flow-ref name="ClientResponder"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <!-- Request/Response flow for AuthorizeSecurityGroupIngress -->
+
+	<flow name="AuthorizeSecurityGroupIngressRequest" >
+        <component>
+            <spring-object bean="AuthorizeSecurityGroupIngressWorker"/>
+        </component>
+        <flow-ref name="AuthorizeSecurityGroupIngressResponse"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <flow name="AuthorizeSecurityGroupIngressResponse">
+        <choice>
+            <when expression="#[org.mule.util.StringUtils.isNotEmpty(sessionVars['returnAddress'])]">
+                <flow-ref name="ZMQResponder"/>
+            </when>
+            <otherwise>
+                <component>
+                    <spring-object bean="AuthorizeSecurityGroupIngress"/>
+                </component>
+            </otherwise>
+        </choice>
+        <flow-ref name="ClientResponder"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <!-- Request/Response flow for DeleteSecurityGroup -->
+
+    <flow name="DeleteSecurityGroupRequest" >
+        <component>
+            <spring-object bean="DeleteSecurityGroupWorker"/>
+        </component>
+        <flow-ref name="DeleteSecurityGroupResponse"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <flow name="DeleteSecurityGroupResponse">
+        <choice>
+            <when expression="#[org.mule.util.StringUtils.isNotEmpty(sessionVars['returnAddress'])]">
+                <flow-ref name="ZMQResponder"/>
+            </when>
+            <otherwise>
+                <component>
+                    <spring-object bean="DeleteSecurityGroup"/>
+                </component>
+            </otherwise>
+        </choice>
+        <flow-ref name="ClientResponder"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+	<!-- Request/Response flow for Describe Security Groups -->
+
+    <flow name="DescribeSecurityGroupsRequest" >
+        <component>
+            <spring-object bean="DescribeSecurityGroupsWorker"/>
+        </component>
+        <flow-ref name="DescribeSecurityGroupsResponse"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <flow name="DescribeSecurityGroupsResponse"  >
+        <choice>
+            <when expression="#[org.mule.util.StringUtils.isNotEmpty(sessionVars['returnAddress'])]">
+                <flow-ref name="ZMQResponder"/>
+            </when>
+            <otherwise>
+                <component>
+                    <spring-object bean="DescribeSecurityGroups"/>
+                </component>
+            </otherwise>
+        </choice>
+        <flow-ref name="ClientResponder"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <!-- Request/Response flow for RevokeSecurityGroupIngress -->
+
+	<flow name="RevokeSecurityGroupIngressRequest" >
+        <component>
+            <spring-object bean="RevokeSecurityGroupIngressWorker"/>
+        </component>
+        <flow-ref name="RevokeSecurityGroupIngressResponse"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <flow name="RevokeSecurityGroupIngressResponse" >
+        <choice>
+            <when expression="#[org.mule.util.StringUtils.isNotEmpty(sessionVars['returnAddress'])]">
+                <flow-ref name="ZMQResponder"/>
+            </when>
+            <otherwise>
+                <component>
+                    <spring-object bean="RevokeSecurityGroupIngress"/>
+                </component>
+            </otherwise>
+        </choice>
+        <flow-ref name="ClientResponder"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <!-- Request/Response flow for RunInstances -->
+
+    <flow name="RunInstancesRequest" >
+        <component>
+            <spring-object bean="RunInstancesWorker"/>
+        </component>
+        <flow-ref name="RunInstancesResponse"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <flow name="RunInstancesResponse"  >
+        <choice>
+            <when expression="#[org.mule.util.StringUtils.isNotEmpty(sessionVars['returnAddress'])]">
+                <flow-ref name="ZMQResponder"/>
+            </when>
+            <otherwise>
+                <component>
+                    <spring-object bean="RunInstances"/>
+                </component>
+            </otherwise>
+        </choice>
+        <flow-ref name="ClientResponder"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <!-- Request/Response flow for Allocate Address -->
+
+    <flow name="AllocateAddressRequest" >
+        <component>
+            <spring-object bean="AllocateAddressWorker"/>
+        </component>
+        <flow-ref name="AllocateAddressResponse"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <flow name="AllocateAddressResponse"  >
+        <choice>
+            <when expression="#[org.mule.util.StringUtils.isNotEmpty(sessionVars['returnAddress'])]">
+                <flow-ref name="ZMQResponder"/>
+            </when>
+            <otherwise>
+                <component>
+                    <spring-object bean="AllocateAddress"/>
+                </component>
+            </otherwise>
+        </choice>
+        <flow-ref name="ClientResponder"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <!-- Request/Response flow for Delete Key Pair -->
+
+    <flow name="DeleteKeyPairRequest" >
+        <component>
+            <spring-object bean="DeleteKeyPairWorker"/>
+        </component>
+        <flow-ref name="DeleteKeyPairResponse"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <flow name="DeleteKeyPairResponse"  >
+        <choice>
+            <when expression="#[org.mule.util.StringUtils.isNotEmpty(sessionVars['returnAddress'])]">
+                <flow-ref name="ZMQResponder"/>
+            </when>
+            <otherwise>
+                <component>
+                    <spring-object bean="DeleteKeyPair"/>
+                </component>
+            </otherwise>
+        </choice>
+        <flow-ref name="ClientResponder"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+	<!-- Request/Response flow for Associate Address -->
+
+	<flow name="AssociateAddressRequest" >
+        <component>
+            <spring-object bean="AssociateAddressWorker"/>
+        </component>
+        <flow-ref name="AssociateAddressResponse"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <flow name="AssociateAddressResponse" >
+        <choice>
+            <when expression="#[org.mule.util.StringUtils.isNotEmpty(sessionVars['returnAddress'])]">
+                <flow-ref name="ZMQResponder"/>
+            </when>
+            <otherwise>
+                <component>
+                    <spring-object bean="AssociateAddress"/>
+                </component>
+            </otherwise>
+        </choice>
+        <flow-ref name="ClientResponder"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <!-- Request/Response flow for Disassociate Address -->
+
+    <flow name="DisassociateAddressRequest" >
+        <component>
+            <spring-object bean="DisassociateAddressWorker"/>
+        </component>
+        <flow-ref name="DisassociateAddressResponse"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <flow name="DisassociateAddressResponse"  >
+        <choice>
+            <when expression="#[org.mule.util.StringUtils.isNotEmpty(sessionVars['returnAddress'])]">
+                <flow-ref name="ZMQResponder"/>
+            </when>
+            <otherwise>
+                <component>
+                    <spring-object bean="DisassociateAddress"/>
+                </component>
+            </otherwise>
+        </choice>
+        <flow-ref name="ClientResponder"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+	<!-- Request/Response flow for Create Key Pair -->
+
+    <flow name="CreateKeyPairRequest" >
+        <component>
+            <spring-object bean="CreateKeyPairWorker"/>
+        </component>
+        <flow-ref name="CreateKeyPairResponse"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <flow name="CreateKeyPairResponse"  >
+        <choice>
+            <when expression="#[org.mule.util.StringUtils.isNotEmpty(sessionVars['returnAddress'])]">
+                <flow-ref name="ZMQResponder"/>
+            </when>
+            <otherwise>
+                <component>
+                    <spring-object bean="CreateKeyPair"/>
+                </component>
+            </otherwise>
+        </choice>
+        <flow-ref name="ClientResponder"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <!-- Request/Response flow for Create Volume -->
+
+    <flow name="CreateVolumeRequest" >
+        <component>
+            <spring-object bean="CreateVolumeWorker"/>
+        </component>
+        <flow-ref name="CreateVolumeResponse"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <flow name="CreateVolumeResponse"  >
+        <choice>
+            <when expression="#[org.mule.util.StringUtils.isNotEmpty(sessionVars['returnAddress'])]">
+                <flow-ref name="ZMQResponder"/>
+            </when>
+            <otherwise>
+                <component>
+                    <spring-object bean="CreateVolume"/>
+                </component>
+            </otherwise>
+        </choice>
+        <flow-ref name="ClientResponder"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <!-- Request/Response flow for Delete Volume -->
+
+    <flow name="DeleteVolumeRequest" >
+        <component>
+            <spring-object bean="DeleteVolumeWorker"/>
+        </component>
+        <flow-ref name="DeleteVolumeResponse"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <flow name="DeleteVolumeResponse"  >
+        <choice>
+            <when expression="#[org.mule.util.StringUtils.isNotEmpty(sessionVars['returnAddress'])]">
+                <flow-ref name="ZMQResponder"/>
+            </when>
+            <otherwise>
+                <component>
+                    <spring-object bean="DeleteVolume"/>
+                </component>
+            </otherwise>
+        </choice>
+        <flow-ref name="ClientResponder"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <!-- Request/Response flow for Describe Volumes -->
+
+    <flow name="DescribeVolumesRequest" >
+        <component>
+            <spring-object bean="DescribeVolumesWorker"/>
+        </component>
+        <flow-ref name="DescribeVolumesResponse"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <flow name="DescribeVolumesResponse"  >
+        <choice>
+            <when expression="#[org.mule.util.StringUtils.isNotEmpty(sessionVars['returnAddress'])]">
+                <flow-ref name="ZMQResponder"/>
+            </when>
+            <otherwise>
+                <component>
+                    <spring-object bean="DescribeVolumes"/>
+                </component>
+            </otherwise>
+        </choice>
+        <flow-ref name="ClientResponder"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <!-- Request/Response flow for Release Address -->
+
+    <flow name="ReleaseAddressRequest" >
+        <component>
+            <spring-object bean="ReleaseAddressWorker"/>
+        </component>
+        <flow-ref name="ReleaseAddressResponse"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <flow name="ReleaseAddressResponse"  >
+        <choice>
+            <when expression="#[org.mule.util.StringUtils.isNotEmpty(sessionVars['returnAddress'])]">
+                <flow-ref name="ZMQResponder"/>
+            </when>
+            <otherwise>
+                <component>
+                    <spring-object bean="ReleaseAddress"/>
+                </component>
+            </otherwise>
+        </choice>
+        <flow-ref name="ClientResponder"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <flow name="CreateSecurityGroupRequest" >
+        <component>
+            <spring-object bean="CreateSecurityGroupWorker"/>
+        </component>
+        <flow-ref name="CreateSecurityGroupResponse"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <flow name="CreateSecurityGroupResponse"  >
+        <choice>
+            <when expression="#[org.mule.util.StringUtils.isNotEmpty(sessionVars['returnAddress'])]">
+                <flow-ref name="ZMQResponder"/>
+            </when>
+            <otherwise>
+                <component>
+                    <spring-object bean="CreateSecurityGroup"/>
+                </component>
+            </otherwise>
+        </choice>
+        <flow-ref name="ClientResponder"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <!-- Request/Response flow for Terminate Instances -->
+
+    <flow name="TerminateInstancesRequest" >
+        <component>
+            <spring-object bean="TerminateInstancesWorker"/>
+        </component>
+        <flow-ref name="TerminateInstancesResponse"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <flow name="TerminateInstancesResponse"  >
+        <choice>
+            <when expression="#[org.mule.util.StringUtils.isNotEmpty(sessionVars['returnAddress'])]">
+                <flow-ref name="ZMQResponder"/>
+            </when>
+            <otherwise>
+                <component>
+                    <spring-object bean="TerminateInstances"/>
+                </component>
+            </otherwise>
+        </choice>
+        <flow-ref name="ClientResponder"/>
+        <exception-strategy ref="sendErrorBack"/>
+    </flow>
+
+    <!-- General system flows -->
+
+    <flow name="ZMQResponder">
+        <log-component />
+        <processor ref="zmqReturnProcessor"/>
+    </flow>
+
+    <flow name="ClientResponder">
+        <component>
+            <spring-object bean="computeServiceAsync"/>
+        </component>
+    </flow>
+
+    <!-- Handle any unexpected errors. Errors could also be routed elsewhere,
+        e.g. into an error file, send via email to a list, stored in a database, etc. -->
+    <flow name="SystemErrorHandler" ><!-- processingStrategy="synchronous" -->
+        <inbound-endpoint ref="SystemErrorHandlerIn"/>
+        <component>
+            <spring-object bean="snooper"/>
+        </component>
+        <choice>
+            <when expression="#[org.mule.util.StringUtils.isNotEmpty(sessionVars['returnAddress'])]">
+                <flow-ref name="ZMQResponder"/>
+            </when>
+            <otherwise>
+                <flow-ref name="ClientResponder"/>
+            </otherwise>
+        </choice>
+    </flow>
+
+</mule>

@@ -1,0 +1,20 @@
+package topstack_Compute;
+
+option java_package = "com.transcend.compute.message";
+option java_outer_classname = "AllocateAddressMessage";
+
+message AllocateAddressRequestMessage {
+    required bool typeId = 102; // Force umarshal as correct type
+    required string requestId = 1;
+    required string callerAccessKey = 2;
+    optional string domain = 3;
+}
+
+message AllocateAddressResponseMessage {
+    required bool typeId = 103;
+    required string requestId = 1;
+    required string callerAccessKey = 2;
+    required string publicIp = 3;
+    required string domain = 4;
+    required string allocationId = 5;
+}

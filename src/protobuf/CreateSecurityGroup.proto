@@ -1,0 +1,21 @@
+package topstack_Compute;
+
+option java_package = "com.transcend.compute.message";
+option java_outer_classname = "CreateSecurityGroupMessage";
+
+message CreateSecurityGroupRequest {
+    required bool typeId = 110;
+	required string callerAccessKey = 1;
+	required string requestId = 2;
+	required string groupName = 3;
+	required string groupDescription = 4;
+	optional string vpcId = 5;
+}
+
+message CreateSecurityGroupResponse {
+    required bool typeId = 111;
+	required string callerAccessKey = 1;
+	required string requestId = 2;
+	required bool return = 3;
+	required string groupId = 4;
+}

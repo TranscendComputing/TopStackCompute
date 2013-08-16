@@ -1,0 +1,16 @@
+import "Instance.proto";
+import "SecurityGroup.proto";
+
+package topstack_Compute;
+
+option java_package = "com.transcend.compute.message";
+option java_outer_classname = "ReservationMessage";
+
+message Reservation {
+        required string reservationId = 1;
+        required string ownerId = 2;
+        required string requesterId = 3;
+        repeated topstack_Compute.SecurityGroup group = 4;
+        repeated topstack_Compute.Instance instance = 5;
+}
+

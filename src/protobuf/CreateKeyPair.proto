@@ -1,0 +1,25 @@
+import "DefaultMessage.proto";
+
+package topstack_Compute;
+
+option java_package = "com.transcend.compute.message";
+option java_outer_classname = "CreateKeyPairMessage";
+
+message CreateKeyPairRequestMessage {
+    required bool typeId = 108;
+    required string requestId = 1;
+    required string callerAccessKey = 2;
+    required string keyName = 3;
+}
+
+message CreateKeyPairResponseMessage {
+    required bool typeId = 109;
+    required string requestId = 1;
+    required string callerAccessKey = 2;
+    required string keyName = 3;
+    required string keyFingerprint = 4;
+    required string keyMaterial = 5;
+}
+
+
+

@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:oxm="http://www.springframework.org/schema/oxm"
+    xmlns:jdbc="http://www.springframework.org/schema/jdbc" xmlns:lang="http://www.springframework.org/schema/lang"
+    xmlns:p="http://www.springframework.org/schema/p" xmlns:tx="http://www.springframework.org/schema/tx"
+    xmlns:util="http://www.springframework.org/schema/util"
+    xmlns:context="http://www.springframework.org/schema/context"
+
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+    http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.0.xsd
+    http://www.springframework.org/schema/lang http://www.springframework.org/schema/lang/spring-lang-3.0.xsd
+    http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.0.xsd
+    http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.0.xsd
+    http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd
+    ">
+
+    <bean id="serviceName" class="java.lang.String">
+        <constructor-arg value="compute"/>
+    </bean>
+
+    <!-- ============================== -->
+    <import resource="commonservices-context.xml" />
+
+    <bean id="servicesPropertyConfigurer"
+        class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="systemPropertiesModeName" value="SYSTEM_PROPERTIES_MODE_OVERRIDE" />
+        <property name="ignoreUnresolvablePlaceholders" value="true" />
+        <property name="ignoreResourceNotFound" value="true"/>
+        <property name="locations">
+                <list>
+                        <value>classpath*:/*.properties</value>
+                        <value>file:${catalina.base}/conf/transcend.properties</value>
+                        <value>classpath*:/compute.ports</value>
+                </list>
+        </property>
+    </bean>
+
+    <!-- Run common annotations; e.g. PostConstruct/PreDestroy. -->
+    <context:annotation-config />
+
+    <!-- inject compute util classes (helpers, etc.) -->
+    <context:component-scan base-package="com.msi.compute" />
+    <!-- inject core action classes (ActionTestHelper, etc.) -->
+    <context:component-scan base-package="com.msi.tough.query" />
+    <!-- inject project action classes (Describe, etc.) -->
+    <context:component-scan base-package="com.transcend.compute" />
+
+    <bean id="snooper" class="com.transcend.compute.utils.Snooper"/>
+
+    <!-- removing again; why is this still registering?
+	<bean id="EurekaRegistry" class="com.msi.tough.eureka.EurekaService" destroy-method="unRegisterWithEureka">
+		<property name="doRegister" value="${eureka.doregister}"/>
+	</bean>
+    -->
+    <bean id="appctx" factory-method="getInstanceForInjection"
+        class="com.msi.tough.core.Appctx">
+        <property name="configuration" ref="configuration"/>
+    </bean>
+
+    <bean class="com.msi.tough.core.AppctxInjector"/>
+
+    <bean id="hibernateUtil" class="com.msi.tough.core.HibernateUtil">
+        <property name="sessionFactory" ref="sessionFactory" />
+    </bean>
+
+    <tx:annotation-driven transaction-manager="txManager"/>
+
+    <!-- Redefine session factory; this app uses annotations for transactions -->
+    <bean id="sessionFactory"
+        class="org.springframework.orm.hibernate3.LocalSessionFactoryBean">
+        <property name="dataSource" ref="msiDS" />
+        <property name="configLocation" value="classpath:hibernate.cfg.xml"></property>
+        <property name="configurationClass" value="org.hibernate.cfg.AnnotationConfiguration"></property>
+        <property name="hibernateProperties">
+            <value>hibernate.dialect=org.hibernate.dialect.MySQL5InnoDBDialect
+                hibernate.cache.provider_class=org.hibernate.cache.NoCacheProvider
+                hibernate.show_sql=false
+                hibernate.hbm2ddl.auto=update
+            </value>
+        </property>
+    </bean>
+
+    <!-- service definitions from application context -->
+    <bean id="AttachVolume"
+        class="com.transcend.compute.actions.AttachVolume"/>
+
+    <bean id="AttachVolumeWorker"
+        class="com.transcend.compute.worker.AttachVolumeWorker"/>
+
+    <bean id="AuthorizeSecurityGroupIngress"
+    	class="com.transcend.compute.actions.AuthorizeSecurityGroupIngress"/>
+
+	<bean id="AuthorizeSecurityGroupIngressWorker"
+        class="com.transcend.compute.worker.AuthorizeSecurityGroupIngressWorker"/>
+
+	<bean id="RevokeSecurityGroupIngress"
+    	class="com.transcend.compute.actions.RevokeSecurityGroupIngress"/>
+
+	<bean id="RevokeSecurityGroupIngressWorker"
+        class="com.transcend.compute.worker.RevokeSecurityGroupIngressWorker"/>
+
+    <bean id="DescribeInstancesV2"
+        class="com.transcend.compute.actions.DescribeInstancesV2"/>
+
+    <bean id="DescribeInstancesWorker"
+        class="com.transcend.compute.worker.DescribeInstancesWorker"/>
+
+    <bean id="RunInstances"
+        class="com.transcend.compute.actions.RunInstances"/>
+
+    <bean id="RunInstancesWorker"
+        class="com.transcend.compute.worker.RunInstancesWorker"/>
+
+    <bean id="AllocateAddress"
+        class="com.transcend.compute.actions.AllocateAddress"/>
+
+    <bean id="AllocateAddressWorker"
+        class="com.transcend.compute.worker.AllocateAddressWorker"/>
+
+    <bean id="DeleteKeyPair"
+        class="com.transcend.compute.actions.DeleteKeyPair"/>
+
+    <bean id="DeleteKeyPairWorker"
+        class="com.transcend.compute.worker.DeleteKeyPairWorker"/>
+
+    <bean id="CreateKeyPair"
+        class="com.transcend.compute.actions.CreateKeyPair"/>
+
+    <bean id="CreateKeyPairWorker"
+        class="com.transcend.compute.worker.CreateKeyPairWorker"/>
+
+    <bean id="ReleaseAddress"
+        class="com.transcend.compute.actions.ReleaseAddress"/>
+
+    <bean id="ReleaseAddressWorker"
+        class="com.transcend.compute.worker.ReleaseAddressWorker"/>
+
+    <bean id="AssociateAddress"
+        class="com.transcend.compute.actions.AssociateAddress"/>
+
+    <bean id="AssociateAddressWorker"
+        class="com.transcend.compute.worker.AssociateAddressWorker"/>
+
+    <bean id="DisassociateAddress"
+        class="com.transcend.compute.actions.DisassociateAddress"/>
+
+    <bean id="DisassociateAddressWorker"
+        class="com.transcend.compute.worker.DisassociateAddressWorker"/>
+
+    <bean id="CreateSecurityGroup"
+        class="com.transcend.compute.actions.CreateSecurityGroup"/>
+
+    <bean id="CreateSecurityGroupWorker"
+        class="com.transcend.compute.worker.CreateSecurityGroupWorker"/>
+
+    <bean id="DeleteSecurityGroup"
+        class="com.transcend.compute.actions.DeleteSecurityGroup"/>
+
+    <bean id="DeleteSecurityGroupWorker"
+        class="com.transcend.compute.worker.DeleteSecurityGroupWorker"/>
+
+	<bean id="DescribeSecurityGroups"
+		class="com.transcend.compute.actions.DescribeSecurityGroups"/>
+
+	<bean id="DescribeSecurityGroupsWorker"
+		class="com.transcend.compute.worker.DescribeSecurityGroupsWorker"/>
+
+    <bean id="TerminateInstances"
+        class="com.transcend.compute.actions.TerminateInstances"/>
+
+    <bean id="TerminateInstancesWorker"
+        class="com.transcend.compute.worker.TerminateInstancesWorker"/>
+
+	<bean id="CreateVolume"
+		class="com.transcend.compute.actions.CreateVolume"/>
+
+    <bean id="CreateVolumeWorker"
+		class="com.transcend.compute.worker.CreateVolumeWorker"/>
+
+    <bean id="DeleteVolume"
+    	class="com.transcend.compute.actions.DeleteVolume"/>
+
+    <bean id="DeleteVolumeWorker"
+		class="com.transcend.compute.worker.DeleteVolumeWorker"/>
+
+	<bean id="DescribeVolumes"
+    	class="com.transcend.compute.actions.DescribeVolumes"/>
+
+    <bean id="DescribeVolumesWorker"
+		class="com.transcend.compute.worker.DescribeVolumesWorker"/>
+
+    <bean id="computeServiceAsync"
+        class="com.msi.tough.query.AsyncServiceImpl">
+        <constructor-arg>
+            <map>
+                <entry key="AttachVolume" value-ref="AttachVolume"/>
+                <entry key="AuthorizeSecurityGroupIngress" value-ref="AuthorizeSecurityGroupIngress"/>
+                <entry key="RevokeSecurityGroupIngress" value-ref="RevokeSecurityGroupIngress"/>
+                <entry key="DescribeInstances" value-ref="DescribeInstancesV2"/>
+                <entry key="RunInstances" value-ref="RunInstances"/>
+                <entry key="AllocateAddress" value-ref="AllocateAddress"/>
+                <entry key="AssociateAddress" value-ref="AssociateAddress"/>
+                <entry key="DisassociateAddress" value-ref="DisassociateAddress"/>
+                <entry key="CreateSecurityGroup" value-ref="CreateSecurityGroup"/>
+                <entry key="CreateVolume" value-ref="CreateVolume"/>
+                <entry key="DeleteVolume" value-ref="DeleteVolume"/>
+                <entry key="DescribeVolumes" value-ref="DescribeVolumes"/>
+                <entry key="DescribeSecurityGroups" value-ref="DescribeSecurityGroups"/>
+                <entry key="DeleteKeyPair" value-ref="DeleteKeyPair"/>
+                <entry key="DeleteSecurityGroup" value-ref="DeleteSecurityGroup"/>
+                <entry key="CreateKeyPair" value-ref="CreateKeyPair"/>
+                <entry key="ReleaseAddress" value-ref="ReleaseAddress"/>
+                <entry key="TerminateInstances" value-ref="TerminateInstances"/>
+            </map>
+        </constructor-arg>
+    </bean>
+
+    <bean id="endpoint" class="java.lang.String">
+        <constructor-arg value="ActionIn"/>
+    </bean>
+    <bean id="rawEndpoint" class="java.lang.String">
+        <constructor-arg value="DirectToZMQEntry"/>
+    </bean>
+
+    <bean id="workflow" factory-method="getInstance"
+    class="com.msi.tough.workflow.core.MuleWorkflow">
+    </bean>
+
+    <bean id="recvEndpoint" class="java.lang.String">
+        <constructor-arg value="tcp://*:${compute.port}"/>
+    </bean>
+
+    <bean id="workflowReceiver" init-method="init" destroy-method="destroy"
+    class="com.msi.tough.workflow.core.WorkflowReceiver">
+    </bean>
+
+    <bean id="actionHelper" class="com.msi.tough.query.ActionHelper">
+    </bean>
+
+    <bean id="computeService" class="com.transcend.compute.servlet.ComputeServiceImpl">
+        <constructor-arg>
+            <map/>
+        </constructor-arg>
+    </bean>
+
+</beans>

@@ -1,0 +1,28 @@
+import "Volume.proto";
+
+package topstack_Compute;
+
+option java_package = "com.transcend.compute.message";
+option java_outer_classname = "DescribeVolumesMessage";
+
+message DescribeVolumesRequestMessage {
+    required bool typeId = 136;
+
+    required string requestId = 1;
+    required string callerAccessKey = 2;
+    repeated string volumeId = 3;
+    
+    message Filter {
+        required string name = 1;
+        repeated string value = 2;
+    }
+
+    repeated Filter filter = 4;
+}
+
+message DescribeVolumesResponseMessage {
+    required bool typeId = 137;
+    required string requestId = 1;
+    required string callerAccessKey = 2;
+    repeated topstack_Compute.Volume volumes = 3;
+}

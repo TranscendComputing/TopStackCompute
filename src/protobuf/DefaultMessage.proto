@@ -1,0 +1,16 @@
+package topstack_Compute;
+
+option java_package = "com.transcend.compute.message";
+option java_outer_classname = "DefaultMessage";
+
+message DefaultResponseMessage {
+    required bool typeId = 112;
+    required string requestId = 1;
+    required string callerAccessKey = 2;
+}
+
+message DefaultRequestMessage {
+    required bool typeId = 113;
+    required string requestId = 1;
+    required string callerAccessKey = 2;
+}

@@ -1,0 +1,13 @@
+package topstack_Compute;
+
+option java_package = "com.transcend.compute.message";
+option java_outer_classname = "ReleaseAddressMessage";
+
+message ReleaseAddressRequestMessage {
+    required bool typeId = 124;
+    required string requestId = 1;
+    required string callerAccessKey = 2;
+    required string publicIp = 3;
+}
+
+

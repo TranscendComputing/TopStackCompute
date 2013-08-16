@@ -1,0 +1,15 @@
+import "DefaultMessage.proto";
+
+package topstack_Compute;
+
+option java_package = "com.transcend.compute.message";
+option java_outer_classname = "DeleteKeyPairMessage";
+
+message DeleteKeyPairRequestMessage {
+    required bool typeId = 114;
+    required string requestId = 1;
+    required string callerAccessKey = 2;
+    required string keyName = 3;
+}
+
+

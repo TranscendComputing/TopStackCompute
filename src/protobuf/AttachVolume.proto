@@ -1,0 +1,27 @@
+import "Volume.proto";
+
+package topstack_Compute;
+
+option java_package = "com.transcend.compute.message";
+option java_outer_classname = "AttachVolumeMessage";
+
+message AttachVolumeRequest {
+    required bool typeId = 140;
+	required string callerAccessKey = 1;
+	required string requestId = 2;
+	optional string action = 3 [default = ""];
+	optional string volumeId = 4;
+	optional string instanceId = 5;
+	optional string device = 6;
+}
+
+message AttachVolumeResponse {
+    required bool typeId = 141;
+    required string callerAccessKey = 1;
+    required string requestId = 2;
+    optional string volumeId = 3;
+    optional string instanceId = 4;
+    optional string device = 5;
+    required topstack_Compute.AttachStatus status = 6;
+    required string attachTime = 7;
+}

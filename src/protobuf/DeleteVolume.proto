@@ -1,0 +1,18 @@
+package topstack_Compute;
+
+option java_package = "com.transcend.compute.message";
+option java_outer_classname = "DeleteVolumeMessage";
+
+message DeleteVolumeRequestMessage {
+    required bool typeId = 134;
+    required string requestId = 1;
+    required string callerAccessKey = 2;
+    required string volumeId = 3; 
+}
+
+message DeleteVolumeResponseMessage {
+    required bool typeId = 135;
+    required string requestId = 1;
+    required string callerAccessKey = 2;
+    required bool return = 3;
+}

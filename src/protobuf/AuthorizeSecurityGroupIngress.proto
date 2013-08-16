@@ -1,0 +1,41 @@
+package topstack_Compute;
+
+option java_package = "com.transcend.compute.message";
+option java_outer_classname = "AuthorizeSecurityGroupIngressMessage";
+
+message AuthorizeSecurityGroupIngressRequestMessage {
+    required bool typeId = 106;
+    required string requestId = 1;
+    required string callerAccessKey = 2;
+    optional string groupId = 3;
+    optional string groupName = 4;
+
+    message IpPermission {
+    	required string ipProtocol = 1;
+    	optional int32 fromPort = 2;
+    	optional int32 toPort = 3;
+
+    	message Group {
+    		optional string userId = 1;
+    		optional string groupName = 2;
+    		optional string groupId = 3;
+    	}
+
+    	repeated Group groups = 4;
+
+    	message IpRange {
+    		optional string cidrIp = 1;
+    	}
+
+    	repeated IpRange ipRanges = 5;
+    }
+
+    repeated IpPermission ipPermissions = 5;
+}
+
+message AuthorizeSecurityGroupIngressResponseMessage {
+    required bool typeId = 107;
+    required string requestId = 1;
+    required string callerAccessKey = 2;
+    required bool return = 3;
+}

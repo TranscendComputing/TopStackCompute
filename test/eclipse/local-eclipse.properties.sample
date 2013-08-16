@@ -1,0 +1,59 @@
+# Environment settings for running tests locally in eclipse.
+# This path is only in eclipse configuration, not as part of ant.
+
+tester.host=localhost
+#deploy.ip=euca3-devint1
+#essex:deploy.ip=172.31.255.2
+#grizzly:
+#deploy.ip=172.31.251.3
+#local:
+deploy.ip=localhost
+#essex2:deploy.ip=172.31.255.2
+#deploy.ip=172.31.255.1
+deploy.password=tomcat
+deploy.username=tomcat
+tomcat.dir=/var/lib/tomcat7
+tomcat.dir.lib=/usr/share/tomcat7/lib
+tomcat.dir.bin=/usr/share/tomcat7/bin
+
+# Default zone used for tests
+default.availability.zone=grizzly-nova
+
+#ec2.endpoint=http://euca3fe.momentumsoftware.com:8773/services/Eucalyptus
+ec2.endpoint=http://grizzlyfe.momentumsoftware.com:8773/services/Cloud
+
+chef.env=production
+
+# for OpenStack, we actually require username / password, though the property
+# name says accessKey and secretKey
+#essex:test.accessKey=buildbot
+#essex:test.secretKey=buildbot
+#essex:
+test.account.id=000000000026
+#local:
+test.accessKey=buildbot-grizzly
+#local:
+test.secretKey=buildbot-grizzly
+test.limitedQuotaAccessKey=TranscendTest1
+test.limitedQuotaSecretKey=m0mentum3i
+test.limitedQuotaZone=nova
+test.limitedQuotaOwnerId=35b4b20bf2f24fbeabba40d4e24e3a51
+
+# Another test user (valid on the cloud)
+testuser1.accessKey=testuser1
+testuser1.secretKey=testuser1
+# Another test user (valid on the cloud)
+testuser2.accessKey=testuser2
+testuser2.secretKey=testuser2
+
+flyway.user=msi
+flyway.password=msiIsCool
+flyway.driver=com.mysql.jdbc.Driver
+flyway.url=jdbc:mysql://${deploy.ip}:3306/msi
+
+#grizzly
+base.image.id=99e24a61-e1fb-49d2-b576-d68bbe5759cc
+#grizzly
+default.flavor=m1.small.ssd
+#essex:base.image.id=0df07248-3dc4-4304-b3cd-bc9660cb0f63
+#essex:default.flavor=m1.tiny

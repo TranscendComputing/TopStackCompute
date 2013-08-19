@@ -13,12 +13,8 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.web.container"/>
 	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.module.container"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/ToughCore"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/javalibs"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/ToughResources">
-		<accessrules>
-			<accessrule kind="nonaccessible" pattern="slf4j*"/>
-		</accessrules>
-	</classpathentry>
+	<classpathentry combineaccessrules="false" kind="src" path="/TopStackCore"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/TopStackResources"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

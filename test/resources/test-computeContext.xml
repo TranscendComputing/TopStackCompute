@@ -277,8 +277,6 @@
     <!-- stand-in for full cloud config, with only the current test. -->
     <util:map id="configuration0">
         <entry key="AvailabilityZone" value="${default.availability.zone}"></entry>
-        <entry key="EC2_URL"
-                        value="${ec2.endpoint}"></entry>
     </util:map>
 
     <bean id="configuration" factory-method="merge" class="com.msi.tough.core.MapUtil">

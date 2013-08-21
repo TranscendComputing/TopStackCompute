@@ -315,8 +315,8 @@
 
     <bean id="testConnection" class="org.apache.commons.dbcp.BasicDataSource">
         <property name="driverClassName" value="com.mysql.jdbc.Driver" />
-        <property name="url" value="jdbc:mysql://${deploy.ip}:3306/msi" />
-        <property name="username" value="msi" />
+        <property name="url" value="jdbc:mysql://${deploy.ip}:3306/${db.user}" />
+        <property name="username" value="${db.user}" />
         <property name="password" value="${db.password}" />
         <property name="defaultAutoCommit" value="false"></property>
         <property name="initialSize" value="1"></property>

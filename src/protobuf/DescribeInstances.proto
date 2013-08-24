@@ -17,6 +17,12 @@ message DescribeInstancesRequestMessage {
     }
 
     repeated Filter filter = 4;
+    // TopStack extension to AWS: return subset of Instance information
+    enum InstanceDescribeDepth {
+        COMPLETE = 0;
+        BASIC_ONLY = 1;
+    }
+    optional InstanceDescribeDepth instanceDescribeDepth = 5 [default = COMPLETE];
 }
 
 message DescribeInstancesResponseMessage {

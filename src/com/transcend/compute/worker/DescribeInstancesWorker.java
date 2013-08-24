@@ -14,6 +14,7 @@ import org.dasein.cloud.network.Firewall;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StopWatch;
 
 import com.amazonaws.services.ec2.model.EbsInstanceBlockDevice;
 import com.amazonaws.services.ec2.model.Filter;
@@ -24,6 +25,7 @@ import com.msi.tough.model.AccountBean;
 import com.msi.tough.query.ServiceRequestContext;
 import com.msi.tough.workflow.core.AbstractWorker;
 import com.transcend.compute.message.DescribeInstancesMessage.DescribeInstancesRequestMessage;
+import com.transcend.compute.message.DescribeInstancesMessage.DescribeInstancesRequestMessage.InstanceDescribeDepth;
 import com.transcend.compute.message.DescribeInstancesMessage.DescribeInstancesResponseMessage;
 import com.transcend.compute.message.InstanceMessage.Instance;
 import com.transcend.compute.message.InstanceMessage.Instance.InstanceState;
@@ -71,17 +73,36 @@ public class DescribeInstancesWorker extends
         final CloudProvider cloudProvider = DaseinHelper.getProvider(
                 account.getDefZone(), account.getTenant(),
                 account.getAccessKey(), account.getSecretKey());
+
+        StopWatch stopWatch = new StopWatch("DescribeInstancesWorker");
+        stopWatch.start("Init");
         final ComputeServices comp = cloudProvider.getComputeServices();
 
         final VirtualMachineSupport vmServ = comp.getVirtualMachineSupport();
 
-        for (final String vmId : request.getInstanceIdsList()) {
-            if (vmServ.getVirtualMachine(vmId) == null)
-                throw ComputeFaults.instanceDoesNotExist(vmId);
+        stopWatch.stop();
+        stopWatch.start("Get VM List 1");
+        InstanceDescribeDepth depth = request.getInstanceDescribeDepth();
+        stopWatch.stop();
+        stopWatch.start("Get VM List 2");
+        Iterable<VirtualMachine> machines = null;
+        // If we have an list of specific instances, fetch those.
+        if (request.getInstanceIdsCount() > 0) {
+            List<VirtualMachine> machineList = new ArrayList<VirtualMachine>();
+            for (final String vmId : request.getInstanceIdsList()) {
+                VirtualMachine vm = vmServ.getVirtualMachine(vmId);
+                if (vm == null) {
+                    throw ComputeFaults.instanceDoesNotExist(vmId);
+                }
+                machineList.add(vm);
+            }
+            machines = machineList;
+        } else {
+            machines = vmServ.listVirtualMachines();
         }
-        // Don't see anything about Reservations in Dasein, so for now just
+        // Nothing about Reservations in Dasein, so just
         // putting each instance in its own reservation set
-        for (final VirtualMachine vm : vmServ.listVirtualMachines()) {
+        for (final VirtualMachine vm : machines ) {
             final String vmId = vm.getProviderVirtualMachineId();
             if (request.getInstanceIdsList().size() > 0) {
                 if (!request.getInstanceIdsList().contains(vmId)) {
@@ -116,7 +137,9 @@ public class DescribeInstancesWorker extends
             // security group defaults to 'default'.
             // Seems like the json generated from the request to the Openstack
             // server doesn't have a part for "security_groups".
-            {
+            if (! depth.equals(InstanceDescribeDepth.BASIC_ONLY)) {
+                stopWatch.stop();
+                stopWatch.start("Get firewalls");
                 for (String firewallId : vmServ.listFirewalls(vmId)) {
                     Firewall f = cloudProvider.getNetworkServices()
                             .getFirewallSupport().getFirewall(firewallId);
@@ -126,6 +149,8 @@ public class DescribeInstancesWorker extends
                     instance.addGroup(group.build());
                 }
             }
+            stopWatch.stop();
+            stopWatch.start("Remainder");
             {
                 final InstanceState.Builder state = InstanceState.newBuilder();
                 state.setName(vm.getCurrentState().toString().toLowerCase());
@@ -178,28 +203,11 @@ public class DescribeInstancesWorker extends
                 tag.setValue(vm.getTags().get(key));
                 instance.addTag(tag);
             }
-            // TODO: blockDeviceMapping: Can't see a good way to do through
-            // Dasein other than looping through all the Volumes
-            // and seeing if they have an attachment to the instance being
-            // looked at. Seems inefficient.
-            List<InstanceBlockDeviceMapping> blockDeviceMappings = new ArrayList<InstanceBlockDeviceMapping>();
-            for (org.dasein.cloud.compute.Volume vol : comp.getVolumeSupport()
-                    .listVolumes()) {
-                if (vmId.equals(vol.getProviderVirtualMachineId())) {
-                    final InstanceBlockDeviceMapping blockDevice = new InstanceBlockDeviceMapping();
-                    final EbsInstanceBlockDevice volume = new EbsInstanceBlockDevice();
-                    volume.setVolumeId(vol.getName());
-                    // Only statuses available are 'AVAILABLE', 'PENDING', and
-                    // 'DELETED'
-                    volume.setStatus("in-use");
-                    blockDevice.setDeviceName(vol.getDeviceId());
-                    blockDevice.setEbs(volume);
-                    blockDeviceMappings.add(blockDevice);
-                }
+
+            if (! depth.equals(InstanceDescribeDepth.BASIC_ONLY)) {
+                addBlockDevices(comp, instance);
             }
 
-            //TODO JHG: protobuf block device mappings
-            //instance.setBlockDeviceMappings(blockDeviceMappings);
             if (vm.getProviderKeypairId() != null) {
                 instance.setKeyName(vm.getProviderKeypairId());
             }
@@ -212,7 +220,36 @@ public class DescribeInstancesWorker extends
             reserve.addInstance(instance);
             result.addReservations(reserve);
         }
+        if (logger.isDebugEnabled()) {
+            logger.debug("SW:" + stopWatch.prettyPrint());
+        }
         return result.buildPartial();
+    }
+
+    private void addBlockDevices(ComputeServices comp,
+            Instance.Builder instance) throws Exception {
+        // TODO: blockDeviceMapping: Can't see a good way to do through
+        // Dasein other than looping through all the Volumes
+        // and seeing if they have an attachment to the instance being
+        // looked at. Seems inefficient.
+        final String vmId = instance.getInstanceId();
+        List<InstanceBlockDeviceMapping> blockDeviceMappings = new ArrayList<InstanceBlockDeviceMapping>();
+        for (org.dasein.cloud.compute.Volume vol : comp.getVolumeSupport()
+                .listVolumes()) {
+            if (vmId.equals(vol.getProviderVirtualMachineId())) {
+                final InstanceBlockDeviceMapping blockDevice = new InstanceBlockDeviceMapping();
+                final EbsInstanceBlockDevice volume = new EbsInstanceBlockDevice();
+                volume.setVolumeId(vol.getName());
+                // Only statuses available are 'AVAILABLE', 'PENDING', and
+                // 'DELETED'
+                volume.setStatus("in-use");
+                blockDevice.setDeviceName(vol.getDeviceId());
+                blockDevice.setEbs(volume);
+                blockDeviceMappings.add(blockDevice);
+            }
+        }
+        //TODO JHG: protobuf block device mappings
+        //instance.setBlockDeviceMappings(blockDeviceMappings);
     }
 
     // Creates a map to use with Java reflection in order to check filters

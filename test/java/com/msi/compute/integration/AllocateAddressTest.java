@@ -20,11 +20,6 @@ public class AllocateAddressTest extends AbstractBaseComputeTest {
 
     private Set<String> publicIps = new HashSet<String>();
 
-    @Before
-    public void setUp() throws Exception {
-    	
-    }
-
     @After
     public void tearDown() throws Exception {
         for (String publicIp : publicIps) {

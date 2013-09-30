@@ -6,7 +6,6 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.msi.tough.query.ActionRequest;
 import com.msi.tough.query.ActionTestHelper;
 import com.transcend.compute.message.AllocateAddressMessage.AllocateAddressRequestMessage;
 import com.transcend.compute.message.AllocateAddressMessage.AllocateAddressResponseMessage;
@@ -109,9 +108,6 @@ public class AddressLocalHelper {
     @Autowired(required=true)
     public void setReleaseAddressWorker(ReleaseAddressWorker releaseAddressWorker) {
         AddressLocalHelper.releaseAddressWorker = releaseAddressWorker;
-    }
-
-    public static class AllocateAddressRequest extends ActionRequest {
     }
 
 }

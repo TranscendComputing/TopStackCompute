@@ -238,7 +238,7 @@
 
     <bean id="computeClient" class="com.amazonaws.services.ec2.AmazonEC2Client" >
         <constructor-arg ref="basicAWSCredentials" />
-        <property name="endpoint" value="#{ defaultAvailabilityZone == 'us-east-1a' ? 'http://ec2.us-east-1.amazonaws.com/' : 'http://${deploy.ip}:8080/Compute/Action' }" />
+        <property name="endpoint" value="#{ defaultAvailabilityZone == 'us-east-1a' ? 'http://ec2.us-east-1.amazonaws.com/' : 'http://${deploy.ip}:8080/Compute/comp-async/' }" />
     </bean>
 
     <bean id="computeClientV2" class="com.amazonaws.services.ec2.AmazonEC2Client" >
@@ -272,6 +272,9 @@
 
     <bean id="security" factory-method="getInstance"
         class="com.msi.tough.security.AESSecurity">
+    </bean>
+
+    <bean id="runningInstanceHelper" class="com.msi.tough.helper.RunningInstanceHelper" >
     </bean>
 
     <!-- stand-in for full cloud config, with only the current test. -->

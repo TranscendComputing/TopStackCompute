@@ -20,9 +20,9 @@ import com.amazonaws.services.ec2.model.DeleteVolumeRequest;
 import com.amazonaws.services.ec2.model.DescribeVolumesRequest;
 import com.amazonaws.services.ec2.model.Volume;
 import com.amazonaws.services.ec2.model.VolumeAttachment;
-import com.msi.compute.helper.InstanceHelper;
 import com.msi.compute.helper.VolumeHelper;
 import com.msi.tough.core.Appctx;
+import com.msi.tough.helper.RunningInstanceHelper;
 
 public class AttachVolumeTest extends AbstractBaseComputeTest {
 
@@ -30,8 +30,12 @@ public class AttachVolumeTest extends AbstractBaseComputeTest {
             .getName());
 
     public static final int MAX_SLEEP_SECS = 60;
+
     @Resource
     private VolumeHelper volumeHelper = null;
+
+    @Resource
+    RunningInstanceHelper runningInstanceHelper = null;
 
     private String volumeId = null;
 
@@ -57,16 +61,18 @@ public class AttachVolumeTest extends AbstractBaseComputeTest {
             secs += 10;
         }
         logger.info("Creating instance.");
-        instanceId = InstanceHelper.runInstance();
+        instanceId = runningInstanceHelper.
+                getOrCreateInstance("attachVolumeTest");
         logger.info("Created instance with ID " + instanceId);
-        assertEquals("running", InstanceHelper.waitForState(instanceId, "running"));
+        String state = runningInstanceHelper.waitForState(instanceId, "running");
+        assertEquals("running", state);
     }
 
     @After
     public void tearDown() throws Exception {
         // Terminate the instance so the attachment will be eliminated
-        InstanceHelper.terminateInstance(instanceId);
-        assertEquals("terminated", InstanceHelper.waitForState(instanceId, "terminated"));
+        runningInstanceHelper.terminateInstance(instanceId);
+        assertEquals("terminated", runningInstanceHelper.waitForState(instanceId, "terminated"));
 
         List<String> vols = new LinkedList<String>();
         vols.add(volumeId);

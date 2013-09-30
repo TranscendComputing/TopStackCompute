@@ -2,6 +2,9 @@ package com.transcend.compute.worker;
 
 import org.dasein.cloud.CloudException;
 import org.dasein.cloud.CloudProvider;
+import org.dasein.cloud.compute.ComputeServices;
+import org.dasein.cloud.compute.VirtualMachine;
+import org.dasein.cloud.compute.VirtualMachineSupport;
 import org.dasein.cloud.network.IPVersion;
 import org.dasein.cloud.network.IpAddress;
 import org.dasein.cloud.network.IpAddressSupport;
@@ -14,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.msi.tough.core.Appctx;
 import com.msi.tough.dasein.DaseinHelper;
 import com.msi.tough.model.AccountBean;
+import com.msi.tough.query.QueryFaults;
 import com.msi.tough.query.ServiceRequestContext;
 import com.msi.tough.workflow.core.AbstractWorker;
 import com.transcend.compute.message.AssociateAddressMessage.AssociateAddressRequest;
@@ -25,6 +29,9 @@ public class AssociateAddressWorker extends
         AssociateAddressResponse> {
     private final Logger logger = Appctx.getLogger(AssociateAddressWorker.class
             .getName());
+
+    private static final int RETRY_MAX = 5;
+    private static final int RETRY_SECS = 1;
 
     /**
      * We need a local copy of this doWork to provide the transactional
@@ -53,69 +60,96 @@ public class AssociateAddressWorker extends
             ServiceRequestContext context) throws Exception {
 
         final AssociateAddressResponse.Builder result =
-        		AssociateAddressResponse.newBuilder();
-    	final AccountBean account = context.getAccountBean();
+                AssociateAddressResponse.newBuilder();
+        final AccountBean account = context.getAccountBean();
 
         final CloudProvider cloudProvider = DaseinHelper.getProvider(
                 account.getDefZone(), account.getTenant(),
                 account.getAccessKey(), account.getSecretKey());
+        final ComputeServices compute = cloudProvider.getComputeServices();
+        final VirtualMachineSupport vmSupport = compute
+                .getVirtualMachineSupport();
 
         final String publicIp = req.getPublicIp();
-    	final String instanceId = req.getInstanceId();
+        final String instanceId = req.getInstanceId();
 
-		// Check if instance id refers to existing instance
-		if (cloudProvider.getComputeServices().getVirtualMachineSupport()
-				.getVirtualMachine(instanceId) == null) {
-			throw ComputeFaults.instanceDoesNotExist(instanceId);
-		}
+        VirtualMachine vm = vmSupport.getVirtualMachine(instanceId);
+        // Check if instance id refers to existing instance
+        if (vm == null) {
+            throw ComputeFaults.instanceDoesNotExist(instanceId);
+        }
 
         final NetworkServices network = cloudProvider.getNetworkServices();
         final IpAddressSupport ipsupport = network.getIpAddressSupport();
 
-		// check if specified address exists in the pool
-		IpAddress address = null;
-		for (final IpAddress i : ipsupport.listIpPool(IPVersion.IPV4, false)) {
-			if (i.getRawAddress().getIpAddress().equals(publicIp)) {
-				address = i;
-				break;
-			}
-		}
-		if (address == null
-				|| "".equals(address.getRawAddress().getIpAddress())) {
-			throw ComputeFaults.IpAddressDoesNotExist(publicIp);
-		}
+        // check if specified address exists in the pool
+        IpAddress address = null;
+        for (final IpAddress i : ipsupport.listIpPool(IPVersion.IPV4, false)) {
+            if (i.getRawAddress().getIpAddress().equals(publicIp)) {
+                address = i;
+                break;
+            }
+        }
+        if (address == null
+                || "".equals(address.getRawAddress().getIpAddress())) {
+            throw ComputeFaults.IpAddressDoesNotExist(publicIp);
+        }
 
-		logger.debug("Address info - BEGIN: \n" + address.toString() + "\n - END");
-		logger.debug("Address ID: " + address.getProviderIpAddressId());
-		
-		// Currently Dasein gets for the actual string "null" rather than the
-		// null object for address.getServerId() if there is no assigned
-		// instance
-		// According to AWS docs, if address is associated with another
-		// instance, disassociate it and reassociate to the instance specified
-		// in the request.
-		if (address.getServerId() != null && !address.getServerId().equals("null")) {
-			logger.info("The address " + publicIp
-					+ " is currently associated with an instance.");
-			logger.info("Diassociating address...");
-			ipsupport.releaseFromServer(address.getProviderIpAddressId());
-		}
+        logger.debug("Address info - BEGIN: \n" + address.toString() + "\n - END");
+        logger.debug("Address ID: " + address.getProviderIpAddressId());
 
-		logger.info("Associating address "
-				+ address.getRawAddress().getIpAddress() + " to instance "
-				+ instanceId);
+        // Currently Dasein gets for the actual string "null" rather than the
+        // null object for address.getServerId() if there is no assigned
+        // instance
+        // According to AWS docs, if address is associated with another
+        // instance, disassociate it and reassociate to the instance specified
+        // in the request.
+        if (address.getServerId() != null && !address.getServerId().equals("null")) {
+            logger.info("The address " + publicIp
+                    + " is currently associated with an instance.");
+            logger.info("Diassociating address...");
+            ipsupport.releaseFromServer(address.getProviderIpAddressId());
+        }
 
-		/*
+        logger.info("Associating address "
+                + address.getRawAddress().getIpAddress() + " to instance "
+                + instanceId);
+
+        if ("OpenStack".equals(cloudProvider.getProviderName())) {
+            String privateIp = null;
+            int retryCount = 0;
+            while (privateIp == null && retryCount++ < RETRY_MAX) {
+                // Must avoid associating too early; instance should have a fixed IP.
+                if (vm.getPrivateAddresses() != null
+                        && vm.getPrivateAddresses().length > 0) {
+                    privateIp = vm.getPrivateAddresses()[0].getIpAddress();
+                }
+                if (privateIp == null
+                        || privateIp.length() == 0
+                        || privateIp.equals("0.0.0.0")) {
+                    privateIp = null;
+                    Thread.sleep(RETRY_SECS * 1000);
+                    vm = vmSupport.getVirtualMachine(instanceId);
+                }
+            }
+            if (retryCount >= RETRY_MAX) {
+                logger.error("Error assigning IP Address: instance doesn't " +
+                        "have a private IP.");
+                throw QueryFaults.invalidState();
+            }
+        }
+
+        /*
          * TODO: Add VPC Support.
          *   THIS IMPLEMENTATION SUPPORTS EC2-CLASSIC ONLY!
          */
         try {
-        	ipsupport.assign(address.getProviderIpAddressId(), instanceId);
+            ipsupport.assign(address.getProviderIpAddressId(), instanceId);
         } catch (final CloudException e) {
             final ExceptionItems eitms = NovaException.parseException(
                     e.getHttpCode(), e.getMessage());
             throw new Exception ("Error assigning IP Address: error type = "
-            		+ eitms.type.toString());
+                    + eitms.type.toString());
         }
 
         /* If execution arrives here, no exceptions occurred */

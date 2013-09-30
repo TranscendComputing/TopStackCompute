@@ -41,8 +41,8 @@ public class KeyPairLocalHelper {
      * @return
      */
     public static CreateKeyPairRequestMessage createKeyPairRequest(String keyName) {
-    	final CreateKeyPairRequestMessage.Builder builder =
-        		CreateKeyPairRequestMessage.newBuilder();
+        final CreateKeyPairRequestMessage.Builder builder =
+                CreateKeyPairRequestMessage.newBuilder();
         builder.setTypeId(true);
         builder.setCallerAccessKey(actionHelper.getAccessKey());
         builder.setRequestId("test");
@@ -136,20 +136,6 @@ public class KeyPairLocalHelper {
     @Autowired(required=true)
     public void setActionTestHelper(ActionTestHelper actionTestHelper) {
         KeyPairLocalHelper.actionHelper = actionTestHelper;
-    }
-
-
-    public static class DescribeKeyPairsRequest
-        extends ActionRequest {
-
-        public DescribeKeyPairsRequest() {
-            super();
-        }
-
-        public void reset() {
-            super.reset();
-        }
-
     }
 
     @Autowired(required=true)

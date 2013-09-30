@@ -46,8 +46,8 @@ public class AuthorizeSecurityGroupIngressTest extends AbstractBaseComputeTest {
 		req.setGroupName("transcend-topstack");
 		Collection<IpPermission> ipPermissions = new LinkedList<IpPermission>();
 		ipPermission = new IpPermission();
-		ipPermission.setFromPort(80);
-		ipPermission.setToPort(80);
+		ipPermission.setFromPort(9999);
+		ipPermission.setToPort(9999);
 		ipPermission.setIpProtocol("tcp");
 
 		Collection<String> ranges = new LinkedList<String>();
@@ -70,8 +70,8 @@ public class AuthorizeSecurityGroupIngressTest extends AbstractBaseComputeTest {
         req.setGroupName("transcend-topstack");
         Collection<IpPermission> ipPermissions = new LinkedList<IpPermission>();
         ipPermission = new IpPermission();
-        ipPermission.setFromPort(82);
-        ipPermission.setToPort(82);
+        ipPermission.setFromPort(9998);
+        ipPermission.setToPort(9998);
         ipPermission.setIpProtocol("tcp");
 
         Collection<UserIdGroupPair> groups = new LinkedList<UserIdGroupPair>();

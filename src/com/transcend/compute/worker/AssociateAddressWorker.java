@@ -127,6 +127,7 @@ public class AssociateAddressWorker extends
                 if (privateIp == null
                         || privateIp.length() == 0
                         || privateIp.equals("0.0.0.0")) {
+                    logger.debug("Instance does not have private IP, waiting for network ready.");
                     privateIp = null;
                     Thread.sleep(RETRY_SECS * 1000);
                     vm = vmSupport.getVirtualMachine(instanceId);

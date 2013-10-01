@@ -1,7 +1,6 @@
 package com.msi.compute.integration;
 
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -16,7 +15,6 @@ public class DescribeInstancesTest extends AbstractBaseComputeTest {
             .getName());
 
     /**
-     * This test assumes there's always some instances running.
      */
     @Test
     public void testDescribe() {
@@ -25,7 +23,8 @@ public class DescribeInstancesTest extends AbstractBaseComputeTest {
         final DescribeInstancesRequest request = new DescribeInstancesRequest();
         result = getComputeClientV2().describeInstances(request);
         assertNotNull(result);
-        assertTrue(result.getReservations().size() > 0);
+        // There may be no instances running.
+        //assertTrue(result.getReservations().size() > 0);
         logger.debug("Got instances: " + result);
     }
 

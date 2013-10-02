@@ -97,6 +97,7 @@
             <fileset dir="${classes}">
                 <include name="*.ports" />
                 <include name="**/${message.path}/*.class" />
+                <include name="**/client/**/*.class" />
             </fileset>
         </jar>
     </target>

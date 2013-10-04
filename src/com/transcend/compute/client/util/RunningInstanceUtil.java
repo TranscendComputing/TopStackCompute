@@ -82,7 +82,7 @@ public class RunningInstanceUtil {
         if (ib != null && !StringHelper.isBlank(ib.getInstanceId())) {
             return ib.getInstanceId();
         }
-        if (describe) {
+        if (describe && ip != null) {
             List<Instance> instances = describeAllInstances(session);
             for (Instance inst : instances) {
                 if (inst.getPrivateIp().equals(ip)) {

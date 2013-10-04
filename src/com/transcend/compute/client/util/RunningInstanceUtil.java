@@ -72,9 +72,13 @@ public class RunningInstanceUtil {
         if (ib != null && !StringHelper.isBlank(ib.getInstanceId())) {
             return ib.getInstanceId();
         }
-        final Query byIp = new QueryBuilder("from InstanceBean").
-                equals("privateIp", ip).toQuery(session);
-        ib = (InstanceBean) byIp.uniqueResult();
+        if (ip != null) {
+            final Query byIp = new QueryBuilder("from InstanceBean")
+                .equals("privateIp", ip)
+                .equals("health", "Healthy")
+                .toQuery(session);
+            ib = (InstanceBean) byIp.uniqueResult();
+        }
         if (ib != null && !StringHelper.isBlank(ib.getInstanceId())) {
             return ib.getInstanceId();
         }

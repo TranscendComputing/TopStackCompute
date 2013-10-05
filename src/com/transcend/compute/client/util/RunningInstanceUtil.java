@@ -95,6 +95,14 @@ public class RunningInstanceUtil {
                     return ib.getInstanceId();
                 }
             }
+            // If we described and still don't have an instance, give up.
+            ib = new InstanceBean();
+            ib.setUserId(0);
+            ib.setInstanceId(instanceId);
+            ib.setPrivateIp(ip);
+            ib.setEc2Id(instanceId);
+            session.save(ib);
+            return ib.getInstanceId();
         }
         return instanceId;
     }

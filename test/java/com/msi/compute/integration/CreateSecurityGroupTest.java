@@ -7,11 +7,15 @@ import java.util.UUID;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
 
 import com.amazonaws.services.ec2.model.CreateSecurityGroupRequest;
 import com.amazonaws.services.ec2.model.DeleteSecurityGroupRequest;
+import com.msi.tough.core.Appctx;
 
 public class CreateSecurityGroupTest extends AbstractBaseComputeTest {
+    private static Logger logger = Appctx.getLogger(CreateSecurityGroupTest.class
+            .getName());
 
     protected final SimpleDateFormat dateFormat = new SimpleDateFormat(
             "yyyy-MM-dd-HH-mm-ss-SSS");
@@ -34,7 +38,11 @@ public class CreateSecurityGroupTest extends AbstractBaseComputeTest {
 
     @Test
     public void testGoodCreate() throws Exception {
-        CreateSecurityGroupRequest req = new CreateSecurityGroupRequest(name1, desc);
-        getComputeClientV2().createSecurityGroup(req);
+        try {
+            CreateSecurityGroupRequest req = new CreateSecurityGroupRequest(name1, desc);
+            getComputeClientV2().createSecurityGroup(req);
+        } catch (Exception e) {
+            logger.error("Failed to create security group.", e);
+        }
     }
 }

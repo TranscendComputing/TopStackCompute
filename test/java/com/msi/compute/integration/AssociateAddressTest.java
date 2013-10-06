@@ -1,12 +1,6 @@
 package com.msi.compute.integration;
 
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
 
 import javax.annotation.Resource;
 
@@ -20,13 +14,8 @@ import com.amazonaws.services.ec2.model.AllocateAddressRequest;
 import com.amazonaws.services.ec2.model.AllocateAddressResult;
 import com.amazonaws.services.ec2.model.AssociateAddressRequest;
 import com.amazonaws.services.ec2.model.AssociateAddressResult;
-import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
-import com.amazonaws.services.ec2.model.DescribeInstancesResult;
 import com.amazonaws.services.ec2.model.DisassociateAddressRequest;
-import com.amazonaws.services.ec2.model.Instance;
 import com.amazonaws.services.ec2.model.ReleaseAddressRequest;
-import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
-import com.msi.compute.helper.InstanceHelper;
 import com.msi.tough.core.Appctx;
 import com.msi.tough.helper.RunningInstanceHelper;
 
